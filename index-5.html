@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Speech to Text | Convert your voice into text</title>
+<meta name="description" content="A simple speech-to-text web app by Deepika Krishnan. Speak into your microphone and see your words as text.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%99%EF%B8%8F%3C/text%3E%3C/svg%3E">
+<style>
+:root {
+  --ink: #26214A;
+  --muted: #5F5A82;
+  --line: rgba(38, 33, 74, 0.12);
+  --primary: #5B3FD9;
+  --primary-2: #E0489B;
+  --danger: #E11D48;
+  --pink: #FFD9E8;
+  --sky: #D3EEFF;
+  --sun: #FFF0B8;
+  --mint: #CFF5E2;
+  --lilac: #E5DBFF;
+  --peach: #FFE1CC;
+  --card: rgba(255, 255, 255, 0.86);
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+body { margin: 0; color: var(--ink); font-family: var(--font); font-size: 1.05rem; line-height: 1.65; -webkit-font-smoothing: antialiased; background: #F8F4FF; }
+/* Colourful light background */
+body::before {
+  content: ""; position: fixed; inset: 0; z-index: -1;
+  background:
+    radial-gradient(circle at 8% 6%, #FFD3E6 0, transparent 38%),
+    radial-gradient(circle at 92% 10%, #C9EBFF 0, transparent 40%),
+    radial-gradient(circle at 88% 55%, #FFF0B0 0, transparent 34%),
+    radial-gradient(circle at 6% 62%, #C8F5DF 0, transparent 36%),
+    radial-gradient(circle at 60% 96%, #E3D6FF 0, transparent 42%),
+    #F8F4FF;
+}
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; border-radius: 8px; }
+.wrap { width: 100%; max-width: 1040px; margin: 0 auto; padding: 0 20px; }
+
+/* Header */
+header { position: sticky; top: 0; z-index: 20; background: rgba(255, 255, 255, 0.72); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+header .wrap { display: flex; align-items: center; gap: 12px; height: 62px; }
+.brand { font-weight: 800; text-decoration: none; white-space: nowrap; font-size: 1.05rem; }
+nav { display: flex; gap: 4px; margin-left: auto; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+nav::-webkit-scrollbar { display: none; }
+nav a { padding: 8px 14px; border-radius: 999px; text-decoration: none; font-weight: 600; font-size: 0.95rem; color: var(--muted); white-space: nowrap; }
+nav a:hover { background: var(--lilac); color: var(--ink); }
+nav a.active { background: linear-gradient(90deg, var(--primary), var(--primary-2)); color: #fff; }
+
+/* Home */
+.hero { padding: 52px 0 24px; text-align: center; }
+.hero .tag { display: inline-block; padding: 6px 16px; border-radius: 999px; background: var(--sun); color: #7A5200; font-weight: 700; font-size: 0.9rem; margin-bottom: 18px; border: 1px solid rgba(122, 82, 0, 0.15); }
+.hero h1 { font-size: clamp(2.2rem, 7vw, 3.8rem); line-height: 1.08; letter-spacing: -0.02em; margin: 0 0 16px; }
+.hero h1 span { background: linear-gradient(90deg, var(--primary), var(--primary-2)); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; }
+.hero p.sub { font-size: 1.15rem; color: var(--muted); max-width: 34em; margin: 0 auto 34px; }
+
+/* App card */
+.app { width: 100%; max-width: 620px; margin: 0 auto; background: var(--card); border: 1px solid rgba(255, 255, 255, 0.9); border-radius: 30px; padding: 28px 22px; box-shadow: 0 24px 60px rgba(91, 63, 217, 0.18), 0 2px 0 rgba(255, 255, 255, 0.8) inset; text-align: center; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.mic-button { display: inline-flex; align-items: center; gap: 10px; padding: 16px 38px; border: 0; border-radius: 999px; background: linear-gradient(90deg, var(--primary), var(--primary-2)); color: #fff; font-size: 1.15rem; font-weight: 700; cursor: pointer; font-family: inherit; box-shadow: 0 10px 24px rgba(91, 63, 217, 0.35); }
+.mic-button:hover { filter: brightness(1.07); }
+.mic-button.listening { background: var(--danger); animation: pulse 1.4s infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.5); } 70% { box-shadow: 0 0 0 16px rgba(225, 29, 72, 0); } 100% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0); } }
+.bars { display: flex; justify-content: center; align-items: center; gap: 5px; height: 30px; margin: 16px 0 4px; }
+.bars i { width: 6px; height: 100%; border-radius: 4px; transform: scaleY(0.2); transition: transform .2s; }
+.bars i:nth-child(1) { background: #F472B6; } .bars i:nth-child(2) { background: #FBBF24; } .bars i:nth-child(3) { background: #34D399; }
+.bars i:nth-child(4) { background: #38BDF8; } .bars i:nth-child(5) { background: #A78BFA; } .bars i:nth-child(6) { background: #FB923C; } .bars i:nth-child(7) { background: #F472B6; }
+.app.live .bars i { animation: bar 0.9s ease-in-out infinite; }
+.bars i:nth-child(2) { animation-delay: .1s !important; } .bars i:nth-child(3) { animation-delay: .2s !important; } .bars i:nth-child(4) { animation-delay: .3s !important; }
+.bars i:nth-child(5) { animation-delay: .15s !important; } .bars i:nth-child(6) { animation-delay: .25s !important; } .bars i:nth-child(7) { animation-delay: .05s !important; }
+@keyframes bar { 0%, 100% { transform: scaleY(0.25); } 50% { transform: scaleY(1); } }
+.status { min-height: 1.6em; margin: 6px 0 14px; color: var(--muted); font-weight: 600; }
+textarea { width: 100%; min-height: 200px; padding: 16px; border: 2px solid #E4DDFB; border-radius: 20px; background: #FFFFFF; color: var(--ink); font-family: inherit; font-size: 1.15rem; line-height: 1.55; resize: vertical; text-align: left; }
+textarea:focus { outline: none; border-color: var(--primary); }
+.actions { display: grid; gap: 12px; margin-top: 14px; }
+@media (min-width: 520px) { .actions { grid-template-columns: 1fr 1fr; } }
+.action-button { padding: 14px; border: 0; border-radius: 16px; color: var(--ink); font-size: 1.05rem; font-weight: 700; cursor: pointer; font-family: inherit; }
+#copyButton { background: var(--mint); }
+#clearButton { background: var(--pink); }
+.action-button:hover { filter: brightness(0.96); }
+.note { font-size: 0.9rem; color: var(--muted); margin: 16px 0 0; }
+details.help { margin-top: 16px; text-align: left; background: var(--sun); border-radius: 16px; padding: 12px 16px; border: 1px solid rgba(122, 82, 0, 0.15); }
+details.help summary { cursor: pointer; font-weight: 700; color: #6B4700; }
+details.help ol { margin: 10px 0 4px; padding-left: 20px; font-size: 0.97rem; color: #5A4300; }
+details.help li { margin-bottom: 6px; }
+
+/* Sections */
+section { padding: 84px 0 0; }
+.section-head { text-align: center; max-width: 40em; margin: 0 auto 36px; }
+.kicker { display: inline-block; padding: 4px 14px; border-radius: 999px; font-weight: 700; font-size: 0.9rem; margin-bottom: 12px; }
+#about .kicker { background: var(--sky); color: #0B5A87; }
+#features .kicker { background: var(--pink); color: #9D1F5B; }
+#how .kicker { background: var(--mint); color: #0B6B45; }
+.section-head h2 { font-size: clamp(1.8rem, 5vw, 2.5rem); line-height: 1.15; letter-spacing: -0.01em; margin: 0 0 12px; }
+.section-head p { color: var(--muted); margin: 0; }
+
+.about { display: grid; gap: 22px; }
+@media (min-width: 860px) { .about { grid-template-columns: 1.3fr 1fr; align-items: start; } }
+.panel { border-radius: 24px; padding: 26px; border: 1px solid rgba(255, 255, 255, 0.9); box-shadow: 0 10px 30px rgba(91, 63, 217, 0.08); }
+.about .panel:nth-child(1) { background: var(--card); }
+.about .panel:nth-child(2) { background: var(--lilac); }
+.panel h3 { margin: 0 0 10px; font-size: 1.2rem; }
+.panel p:last-child { margin-bottom: 0; }
+.panel a { color: var(--primary); font-weight: 700; }
+.built { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.built li { display: flex; justify-content: space-between; gap: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(38, 33, 74, 0.12); }
+.built li:last-child { border-bottom: 0; padding-bottom: 0; }
+.built span { color: var(--muted); }
+.built b { text-align: right; }
+
+.grid { display: grid; gap: 18px; }
+@media (min-width: 620px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 940px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+.feature { border-radius: 22px; padding: 24px; border: 1px solid rgba(255, 255, 255, 0.9); box-shadow: 0 10px 30px rgba(91, 63, 217, 0.08); }
+.feature:nth-child(1) { background: var(--pink); } .feature:nth-child(2) { background: var(--sun); } .feature:nth-child(3) { background: var(--mint); }
+.feature:nth-child(4) { background: var(--sky); } .feature:nth-child(5) { background: var(--lilac); } .feature:nth-child(6) { background: var(--peach); }
+.feature .icon { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 14px; background: rgba(255, 255, 255, 0.75); font-size: 1.5rem; margin-bottom: 14px; }
+.feature h3 { margin: 0 0 6px; font-size: 1.15rem; }
+.feature p { margin: 0; color: #4A4570; font-size: 0.98rem; }
+
+.steps { list-style: none; margin: 0 auto; padding: 0; max-width: 720px; display: grid; gap: 16px; counter-reset: step; }
+.steps li { counter-increment: step; display: flex; gap: 18px; align-items: flex-start; background: var(--card); border: 1px solid rgba(255, 255, 255, 0.9); border-radius: 22px; padding: 20px 22px; box-shadow: 0 10px 30px rgba(91, 63, 217, 0.08); }
+.steps li::before { content: counter(step); flex: none; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; color: #26214A; }
+.steps li:nth-child(1)::before { background: #FFB8D6; } .steps li:nth-child(2)::before { background: #FFE27A; }
+.steps li:nth-child(3)::before { background: #9BE8C4; } .steps li:nth-child(4)::before { background: #9ED8FF; }
+.steps h3 { margin: 0 0 4px; font-size: 1.1rem; }
+.steps p { margin: 0; color: var(--muted); }
+.tips { max-width: 720px; margin: 22px auto 0; background: var(--sun); border-radius: 22px; padding: 22px 24px; border: 1px solid rgba(122, 82, 0, 0.12); }
+.tips h3 { margin: 0 0 8px; font-size: 1.1rem; color: #6B4700; }
+.tips ul { margin: 0; padding-left: 20px; color: #5A4300; }
+.tips li { margin-bottom: 4px; }
+
+footer { margin-top: 84px; background: rgba(255, 255, 255, 0.6); border-top: 1px solid var(--line); padding: 32px 0 44px; text-align: center; color: var(--muted); font-size: 0.95rem; }
+footer p { margin: 0 0 6px; }
+footer a { color: var(--primary); font-weight: 700; }
+
+@media (max-width: 560px) {
+  .brand span { display: none; }
+  section { padding-top: 64px; }
+  .hero { padding-top: 36px; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .mic-button.listening, .app.live .bars i { animation: none; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <a class="brand" href="#home">🎙️ <span>Speech to Text</span></a>
+    <nav aria-label="Main">
+      <a href="#home">Home</a>
+      <a href="#about">About the App</a>
+      <a href="#features">Features</a>
+      <a href="#how">How to Use</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <!-- HOME -->
+  <section id="home" style="padding-top:0;">
+    <div class="wrap">
+      <div class="hero">
+        <span class="tag">Free and simple</span>
+        <h1>Speak, and watch your words <span>turn into text</span></h1>
+        <p class="sub">Tap the button, talk naturally, and your voice appears as text you can copy and use anywhere.</p>
+
+        <div class="app" id="app">
+          <button id="micButton" class="mic-button" type="button">
+            <span id="micIcon">🎤</span>
+            <span id="micText">Start Speaking</span>
+          </button>
+
+          <div class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+
+          <p id="status" class="status" role="status">Ready</p>
+
+          <textarea id="result" placeholder="Your text will appear here..." aria-label="Converted text"></textarea>
+
+          <div class="actions">
+            <button id="copyButton" class="action-button" type="button">📋 Copy Text</button>
+            <button id="clearButton" class="action-button" type="button">🗑️ Clear</button>
+          </div>
+
+          <details class="help" id="help">
+            <summary>Microphone not working?</summary>
+            <ol>
+              <li>Open this page in <b>Google Chrome</b>, not inside WhatsApp, Instagram or another app.</li>
+              <li>Tap the icon at the left of the address bar, choose <b>Permissions</b>, set <b>Microphone</b> to <b>Allow</b>, then refresh the page.</li>
+              <li>On your phone go to <b>Settings, Apps, Chrome, Permissions, Microphone</b> and choose <b>Allow</b>.</li>
+              <li>Check that the internet is on and no other app (a call or voice recorder) is using the microphone.</li>
+              <li>The address should start with <b>https://</b>. Do not open the file directly from your Downloads folder.</li>
+            </ol>
+          </details>
+
+          <p class="note">Works best in Google Chrome. Your browser will ask for microphone permission the first time.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="about">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker">About the App</div>
+        <h2>A simple way to turn speech into text</h2>
+        <p>Speech to Text lets you talk instead of type. It listens through your microphone and writes what you say.</p>
+      </div>
+      <div class="about">
+        <div class="panel">
+          <h3>Why I built it</h3>
+          <p>I'm Deepika Krishnan, a second-year engineering student at Government College of Technology, Coimbatore. I built this app to practise programming and to understand how speech recognition works on the web.</p>
+          <p>It is one of my learning projects. I am also exploring a mobile version of a speech-to-text app using MIT App Inventor.</p>
+          <p><a href="https://deepikakrishnan22122007-bit.github.io/">Visit my portfolio</a></p>
+        </div>
+        <div class="panel">
+          <h3>Built with</h3>
+          <ul class="built">
+            <li><span>Structure</span><b>HTML</b></li>
+            <li><span>Design</span><b>CSS</b></li>
+            <li><span>Logic</span><b>JavaScript</b></li>
+            <li><span>Speech</span><b>Web Speech API</b></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker">Features</div>
+        <h2>Everything you need, nothing you don't</h2>
+        <p>Simple tools that make turning speech into text quick and easy.</p>
+      </div>
+      <div class="grid">
+        <div class="feature"><div class="icon">🎤</div><h3>Voice to text</h3><p>Speak into your microphone and your words are written for you.</p></div>
+        <div class="feature"><div class="icon">⚡</div><h3>Instant results</h3><p>Your text appears as soon as you finish speaking.</p></div>
+        <div class="feature"><div class="icon">➕</div><h3>Keep adding</h3><p>Tap Start again to add more sentences after the ones you already have.</p></div>
+        <div class="feature"><div class="icon">✏️</div><h3>Edit freely</h3><p>Fix any word by typing in the text box, just like a normal note.</p></div>
+        <div class="feature"><div class="icon">📋</div><h3>One-tap copy</h3><p>Copy all your text with a single button and paste it anywhere.</p></div>
+        <div class="feature"><div class="icon">🌐</div><h3>No install needed</h3><p>It runs in your browser, so there is nothing to download.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW TO USE -->
+  <section id="how">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker">How to Use</div>
+        <h2>Four easy steps</h2>
+        <p>You can be up and running in a few seconds.</p>
+      </div>
+      <ol class="steps">
+        <li><div><h3>Open the app in Google Chrome</h3><p>Speech recognition works best in Chrome on your phone or laptop, with an internet connection.</p></div></li>
+        <li><div><h3>Tap "Start Speaking"</h3><p>Allow microphone access when your browser asks. The button turns red while it is listening.</p></div></li>
+        <li><div><h3>Speak clearly</h3><p>Say a sentence and pause. Your words appear in the text box.</p></div></li>
+        <li><div><h3>Copy or clear</h3><p>Tap "Copy Text" to use your text elsewhere, or "Clear" to start over.</p></div></li>
+      </ol>
+      <div class="tips">
+        <h3>Tips for better results</h3>
+        <ul>
+          <li>Speak in a quiet place and hold the phone a little closer.</li>
+          <li>Speak at a steady pace and pause between sentences.</li>
+          <li>If nothing happens, check that the microphone is allowed in your browser settings.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Made by <a href="https://deepikakrishnan22122007-bit.github.io/">Deepika Krishnan</a>, Government College of Technology, Coimbatore.</p>
+    <p>Contact: <a href="mailto:deepikakrishnan22122007@gmail.com">deepikakrishnan22122007@gmail.com</a></p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  /* ---------- Menu highlight ---------- */
+  try {
+    var links = document.querySelectorAll("nav a");
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        links.forEach(function (a) { a.classList.toggle("active", a.getAttribute("href") === "#" + en.target.id); });
+      });
+    }, { rootMargin: "-40% 0px -55% 0px" });
+    document.querySelectorAll("main section").forEach(function (s) { io.observe(s); });
+  } catch (e) {}
+
+  /* ---------- Speech to text ---------- */
+  var app = document.getElementById("app");
+  var micButton = document.getElementById("micButton");
+  var micIcon = document.getElementById("micIcon");
+  var micText = document.getElementById("micText");
+  var statusText = document.getElementById("status");
+  var result = document.getElementById("result");
+  var copyButton = document.getElementById("copyButton");
+  var clearButton = document.getElementById("clearButton");
+  var help = document.getElementById("help");
+
+  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var recognition = null;
+  var isListening = false;
+  var oldText = "";
+  var lastMessage = "";
+  var startTimer = null;
+
+  function joinText(a, b) {
+    return [a, b].filter(Boolean).join(" ").trim();
+  }
+
+  function openHelp() { help.open = true; }
+
+  // Builds ONE sentence from the results and never repeats words
+  function getSessionText(results) {
+    var text = "";
+    for (var i = 0; i < results.length; i++) {
+      var t = results[i][0].transcript.trim();
+      if (!t) continue;
+      var a = text.toLowerCase();
+      var b = t.toLowerCase();
+      if (!text) {
+        text = t;
+      } else if (b.indexOf(a) === 0) {
+        text = t;
+      } else if (a.indexOf(b) === 0) {
+        // shorter copy: ignore
+      } else {
+        text += " " + t;
+      }
+    }
+    return text;
+  }
+
+  function setIdle() {
+    isListening = false;
+    clearTimeout(startTimer);
+    app.classList.remove("live");
+    micButton.classList.remove("listening");
+    micIcon.textContent = "🎤";
+    micText.textContent = "Start Speaking";
+  }
+
+  // Warn early if the page is opened in a place where the mic cannot work
+  var ua = navigator.userAgent || "";
+  var inAppBrowser = /; wv\)|FBAN|FBAV|Instagram|Line\/|Snapchat|LinkedInApp|MicroMessenger|Telegram/i.test(ua);
+
+  if (location.protocol === "file:") {
+    statusText.textContent = "Open this page from its website link (https://) so the microphone can work.";
+    openHelp();
+  } else if (window.isSecureContext === false) {
+    statusText.textContent = "The microphone needs a secure https:// address.";
+    openHelp();
+  } else if (inAppBrowser) {
+    statusText.textContent = "This looks like an in-app browser. Please open the link in Google Chrome.";
+    openHelp();
+  }
+
+  // If the microphone is already blocked for this site, say so right away
+  try {
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: "microphone" }).then(function (p) {
+        if (p.state === "denied") {
+          statusText.textContent = "Microphone is blocked for this site. See the steps below to allow it.";
+          openHelp();
+        }
+      }).catch(function () {});
+    }
+  } catch (e) {}
+
+  if (!SpeechRecognition) {
+    micButton.disabled = true;
+    statusText.textContent = "Speech recognition is not supported in this browser. Please use Google Chrome.";
+    openHelp();
+  } else {
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = "en-IN";
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = function () {
+      clearTimeout(startTimer);
+      isListening = true;
+      lastMessage = "";
+      app.classList.add("live");
+      micButton.classList.add("listening");
+      micIcon.textContent = "⏹️";
+      micText.textContent = "Listening...";
+      statusText.textContent = "Listening... speak now";
+    };
+
+    recognition.onspeechstart = function () {
+      statusText.textContent = "Hearing you...";
+    };
+
+    recognition.onresult = function (event) {
+      var sessionText = getSessionText(event.results);
+      if (!sessionText) return;
+      result.value = joinText(oldText, sessionText);
+      result.scrollTop = result.scrollHeight;
+    };
+
+    recognition.onerror = function (event) {
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        lastMessage = "Microphone is blocked. Allow it in your browser settings (see steps below).";
+        openHelp();
+      } else if (event.error === "audio-capture") {
+        lastMessage = "No microphone found, or another app is using it.";
+        openHelp();
+      } else if (event.error === "no-speech") {
+        lastMessage = "No speech detected. Try again.";
+      } else if (event.error === "network") {
+        lastMessage = "Network error. Please check your internet connection.";
+      } else if (event.error !== "aborted") {
+        lastMessage = "Error: " + event.error;
+      }
+    };
+
+    recognition.onend = function () {
+      oldText = result.value.trim();
+      setIdle();
+      statusText.textContent = lastMessage || "Ready";
+    };
+
+    micButton.addEventListener("click", function () {
+      if (isListening) {
+        recognition.stop();
+        return;
+      }
+      oldText = result.value.trim();
+      lastMessage = "";
+      try {
+        recognition.start();
+        statusText.textContent = "Starting microphone...";
+        // If nothing starts within a few seconds, show help
+        clearTimeout(startTimer);
+        startTimer = setTimeout(function () {
+          if (!isListening) {
+            statusText.textContent = "The microphone did not start. See the steps below.";
+            openHelp();
+          }
+        }, 4000);
+      } catch (error) {
+        statusText.textContent = "Could not start the microphone. Please refresh the page and try again.";
+        openHelp();
+      }
+    });
+  }
+
+  copyButton.addEventListener("click", async function () {
+    var text = result.value.trim();
+    if (text === "") {
+      statusText.textContent = "There is no text to copy.";
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (error) {
+      result.select();
+      document.execCommand("copy");
+    }
+    statusText.textContent = "Text copied successfully!";
+  });
+
+  clearButton.addEventListener("click", function () {
+    result.value = "";
+    oldText = "";
+    lastMessage = "";
+    statusText.textContent = "Text cleared.";
+    if (isListening && recognition) recognition.abort();
+  });
+
+  result.addEventListener("input", function () {
+    if (!isListening) oldText = result.value.trim();
+  });
+})();
+</script>
+</body>
+</html>
